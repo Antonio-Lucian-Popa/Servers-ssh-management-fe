@@ -1,6 +1,9 @@
 node_modules
-npm-debug.log
+dist
 Dockerfile
 .dockerignore
-.env
-data
+.vscode
+.eslintcache
+.git
+.gitignore
+*.log
