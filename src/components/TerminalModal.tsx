@@ -24,7 +24,7 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
   const terminalInstance = useRef<Terminal | null>(null);
   const fitAddon = useRef<FitAddon | null>(null);
   const websocket = useRef<WebSocket | null>(null);
-  
+
   const [password, setPassword] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -46,7 +46,6 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
         background: '#0b0f14',
         foreground: '#d1d5db',
         cursor: '#facc15',
-        selection: '#374151',
         black: '#1f2937',
         red: '#ef4444',
         green: '#22c55e',
@@ -95,11 +94,12 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
   };
 
   const connectWebSocket = () => {
+    console.log(server, !terminalInstance.current);
     if (!server || !terminalInstance.current) return;
 
     setIsConnecting(true);
-    
-    const wsUrl = import.meta.env.VITE_WS_URL;
+
+    const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3001/ws/ssh';
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';
 
@@ -111,11 +111,11 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
         rows: terminalInstance.current!.rows,
         auth: authData,
       };
-      
+
       ws.send(JSON.stringify(message));
       setIsConnected(true);
       setIsConnecting(false);
-      
+
       toast({
         title: 'Connected',
         description: `Connected to ${server.name}`,
@@ -135,7 +135,7 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
     ws.onclose = (event) => {
       setIsConnected(false);
       setIsConnecting(false);
-      
+
       if (terminalInstance.current) {
         terminalInstance.current.write('\r\n[Disconnected]\r\n');
       }
@@ -169,16 +169,20 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
   };
 
   const handleConnect = () => {
-    if (isConnected) {
-      // Reconnect
-      if (websocket.current) {
-        websocket.current.close();
-      }
+    if (!terminalInstance.current) {
+      const cleanup = initializeTerminal();
+      // așteaptă până când DOM-ul a montat canvas-ul xterm
+      requestAnimationFrame(() => connectWebSocket());
+      return;
+    }
+    if (isConnected && websocket.current) {
+      websocket.current.close();
       setTimeout(connectWebSocket, 100);
     } else {
       connectWebSocket();
     }
   };
+
 
   const handleClose = () => {
     if (websocket.current) {
@@ -280,8 +284,8 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
 
         {/* Terminal Container */}
         <div className="flex-1 p-4 bg-[#0b0f14] overflow-hidden">
-          <div 
-            ref={terminalRef} 
+          <div
+            ref={terminalRef}
             className="h-full w-full rounded border border-border/50"
             style={{ minHeight: '300px' }}
           />
