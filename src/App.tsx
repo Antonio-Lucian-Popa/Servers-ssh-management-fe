@@ -14,6 +14,7 @@ import {
   updateServer,
   deleteServer
 } from '@/lib/api';
+import { useAuth } from './context/AuthContext';
 
 function App() {
   const { toast } = useToast();
@@ -26,15 +27,29 @@ function App() {
   const [serverToDelete, setServerToDelete] = useState<Server | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    if (token) {
-      localStorage.setItem('token', token);  // JWT pentru apelurile ulterioare
-      // curăță query-ul din bară
-      window.history.replaceState({}, '', window.location.pathname);
+  const { logout, user } = useAuth();
+
+  const { setAuth } = useAuth();
+
+ useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get('token');
+  if (t) {
+    // decodează minimal pentru a seta user-ul imediat
+    const [, payloadB64] = t.split('.');
+    try {
+      const b64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+      const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+      const payload = JSON.parse(json);
+      const user = payload?.id && payload?.email ? { id: payload.id, email: payload.email, name: payload.name } : null;
+      if (user) setAuth({ token: t, user });
+      else localStorage.setItem('token', t); // fallback minimal
+    } catch {
+      localStorage.setItem('token', t);
     }
-  }, []);
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}, []);
 
   // Check if mobile
   useEffect(() => {
@@ -48,9 +63,13 @@ function App() {
   }, []);
 
   // Load servers on mount
-  useEffect(() => {
+ useEffect(() => {
+  if (user) {
     loadServers();
-  }, []);
+  } else {
+    setServers([]); // golește lista când nu e logat
+  }
+}, [user]);
 
   const loadServers = async () => {
     try {
