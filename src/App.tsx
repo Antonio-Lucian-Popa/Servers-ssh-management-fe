@@ -6,13 +6,13 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { TerminalModal } from '@/components/TerminalModal';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Server, 
+import {
+  Server,
   CreateServerPayload,
-  listServers, 
-  createServer, 
-  updateServer, 
-  deleteServer 
+  listServers,
+  createServer,
+  updateServer,
+  deleteServer
 } from '@/lib/api';
 
 function App() {
@@ -26,12 +26,22 @@ function App() {
   const [serverToDelete, setServerToDelete] = useState<Server | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    if (token) {
+      localStorage.setItem('token', token);  // JWT pentru apelurile ulterioare
+      // curăță query-ul din bară
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -126,7 +136,7 @@ function App() {
   return (
     <div className="min-h-screen bg-background">
       <Topbar onAddServer={handleAddServer} />
-      
+
       <main className="container mx-auto px-4 py-8">
         {servers.length === 0 ? (
           <div className="text-center py-12">

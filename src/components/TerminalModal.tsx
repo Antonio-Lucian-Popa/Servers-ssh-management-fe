@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Server } from '@/lib/api';
+import { getToken, Server } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface TerminalModalProps {
@@ -110,8 +110,8 @@ export function TerminalModal({ isOpen, onClose, server }: TerminalModalProps) {
         cols: terminalInstance.current!.cols,
         rows: terminalInstance.current!.rows,
         auth: authData,
+        token: getToken() || undefined,   // <-- adăugat
       };
-
       ws.send(JSON.stringify(message));
       setIsConnected(true);
       setIsConnecting(false);
